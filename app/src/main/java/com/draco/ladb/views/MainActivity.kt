@@ -14,25 +14,31 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.draco.ladb.BuildConfig
 import com.draco.ladb.R
 import com.draco.ladb.databinding.ActivityMainBinding
 import com.draco.ladb.viewmodels.MainActivityViewModel
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
+
+private fun TextInputEditText.setInputText(str: String) {
+    this.setText(str)
+    this.setSelection(str.length)
+}
 
 class MainActivity : AppCompatActivity() {
     private val viewModel: MainActivityViewModel by viewModels()
     private lateinit var binding: ActivityMainBinding
 
-    private var lastCommand = ""
-
     private var bookmarkGetResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val text = it.data?.getStringExtra(Intent.EXTRA_TEXT) ?: return@registerForActivityResult
-        binding.command.setText(text)
+        binding.command.setInputText(text)
     }
 
     private var pairGetResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -79,10 +85,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun sendCommandToADB() {
         val text = binding.command.text.toString()
-        lastCommand = text
+        viewModel.addCmdHistory(text)
         binding.command.text = null
         lifecycleScope.launch(Dispatchers.IO) {
-            viewModel.adb.sendToShellProcess(text)
+            viewModel.adb.sendToShellProcess(text, true)
         }
     }
 
@@ -90,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         binding.command.isEnabled = ready
         binding.commandContainer.hint =
             if (ready) getString(R.string.command_hint) else getString(R.string.command_hint_waiting)
-        binding.progress.visibility = if (ready) View.INVISIBLE else View.VISIBLE
+        binding.progress.isGone = ready
     }
 
     private fun setupDataListeners() {
@@ -148,8 +154,6 @@ class MainActivity : AppCompatActivity() {
         setupDataListeners()
         if (viewModel.isPairing.value != true)
             pairAndStart()
-
-        viewModel.piracyCheck(this)
     }
 
     /**
@@ -171,6 +175,8 @@ class MainActivity : AppCompatActivity() {
         viewModel.adb.sendScript(code)
     }
 
+    private val cmdHistoryWindow by lazy { CmdHistoryWindow(this, viewModel) }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.bookmarks -> {
@@ -180,9 +186,11 @@ class MainActivity : AppCompatActivity() {
                 true
             }
 
-            R.id.last_command -> {
-                binding.command.setText(lastCommand)
-                binding.command.setSelection(lastCommand.length)
+            R.id.command_history -> {
+                if (!binding.command.isEnabled) return false
+                cmdHistoryWindow.show(binding.viewCmdHistoryDiv) { lastCommand ->
+                    binding.command.setInputText(lastCommand)
+                }
                 true
             }
 
@@ -225,5 +233,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main, menu)
         return true
+    }
+
+    override fun onStart() {
+        super.onStart()
+        viewModel.onStart()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.onStop()
     }
 }

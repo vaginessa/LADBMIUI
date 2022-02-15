@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
 class ADB(private val context: Context) {
     companion object {
         const val MAX_OUTPUT_BUFFER_SIZE = 1024 * 16
-        const val OUTPUT_BUFFER_DELAY_MS = 100L
+        const val OUTPUT_BUFFER_DELAY_MS = 386L
 
         @SuppressLint("StaticFieldLeak")
         @Volatile
@@ -269,12 +269,24 @@ class ADB(private val context: Context) {
     /**
      * Send commands directly to the shell process
      */
-    fun sendToShellProcess(msg: String) {
-        if (shellProcess == null || shellProcess?.outputStream == null)
-            return
-        PrintStream(shellProcess!!.outputStream!!).apply {
-            println(msg)
-            flush()
+    fun sendToShellProcess(msg: String, byUser: Boolean = false) {
+        shellProcess?.outputStream?.let {
+            PrintStream(it).run {
+                if (byUser) {
+                    println("echo")
+                    println("echo $ $msg")
+                    println(msg)
+                    if (msg.startsWith("cd ") || msg == "cd") {
+                        println("echo '+-------------------+'")
+                        println("echo '| CURRENT DIRECTORY | '`pwd`") // echo $(echo '| CURRENT DIRECTORY | '; pwd)
+                        println("echo '+-------------------+'")
+                    }
+                    println("echo")
+                } else {
+                    println(msg)
+                }
+                flush()
+            }
         }
     }
 

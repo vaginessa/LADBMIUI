@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name">LADB</string>
+    <string name="app_name">LADBS</string>
 
     <string name="command_hint">Shell command</string>
     <string name="command_hint_waiting">Waiting for connection…</string>
 
     <string name="bookmarks">Bookmarks</string>
-    <string name="last_command">Last command</string>
+    <string name="command_history">History</string>
     <string name="help">Help</string>
     <string name="more">More</string>
     <string name="share">Share</string>
@@ -25,7 +25,7 @@
     <string name="snackbar_file_opened">Executing script from file</string>
 
     <string name="developer_url">https://www.github.com/tytydraco</string>
-    <string name="source_url">https://www.github.com/tytydraco/LADB</string>
+    <string name="source_url">https://github.com/ysy950803/LADBS</string>
     <string name="contact_url">mailto:tylernij+LADB@gmail.com</string>
     <string name="tutorial_url">https://www.xda-developers.com/debloat-your-phone-run-adb-shell-commands-no-root-no-pc</string>
 
@@ -60,6 +60,10 @@
     <string name="startup_command_title">Startup command</string>
     <string name="startup_command_summary">The command to run once the shell has begun</string>
     <string name="startup_command_key">startup_command</string>
+
+    <string name="clear_history_title">Clear Command History</string>
+    <string name="clear_history_summary">Clean up all commands history, to restart recording.</string>
+    <string name="clear_history_key">clear_history</string>
 
     <string name="tutorial_title">Tutorial</string>
     <string name="tutorial_summary">View the tutorial from the XDA Developers page</string>

@@ -30,6 +30,11 @@
             android:key="@string/startup_command_key"
             android:summary="@string/startup_command_summary"
             android:title="@string/startup_command_title" />
+        <Preference
+            android:icon="@drawable/ic_baseline_restore_24dp"
+            android:title="@string/clear_history_title"
+            android:summary="@string/clear_history_summary"
+            android:key="@string/clear_history_key" />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/troubleshooting">
         <Preference

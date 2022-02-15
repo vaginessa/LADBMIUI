@@ -17,12 +17,22 @@ import com.draco.ladb.R
 import com.draco.ladb.utils.ADB
 import com.github.javiersantos.piracychecker.PiracyChecker
 import com.github.javiersantos.piracychecker.piracyChecker
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.LinkedList
+import java.util.concurrent.LinkedBlockingDeque
 
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
+
+    companion object {
+        const val SP_KEY_CMD_HISTORY = "sp_key_cmd_history"
+    }
+
     private val _outputText = MutableLiveData<String>()
     val outputText: LiveData<String> = _outputText
 
@@ -36,6 +46,16 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
 
     init {
         startOutputThread()
+
+        GlobalScope.launch {
+            val cmds = runCatching {
+                Gson().fromJson<List<String>>(
+                    sharedPreferences.getString(SP_KEY_CMD_HISTORY, ""),
+                    object : TypeToken<List<String>>() {}.type
+                )
+            }.getOrNull() ?: emptyList()
+            addCmdHistory(cmds)
+        }
     }
 
 
@@ -173,5 +193,44 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         }
 
         return String(out)
+    }
+
+    /**
+     * Command history
+     */
+    private val cmdHistoryQueue = LinkedBlockingDeque<String>(100)
+    val cmdHistoryData = MutableLiveData<List<String>>()
+
+    fun addCmdHistory(cmd: String) {
+        if (cmd.isNotBlank()) addCmdHistory(listOf(cmd))
+    }
+
+    private fun addCmdHistory(cmds: List<String>) {
+        with(cmdHistoryQueue) {
+            cmds.forEach { offer(it) }
+            cmdHistoryData.postValue(LinkedList(this))
+        }
+    }
+
+    fun onStart() {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                Gson().fromJson<List<String>>(
+                    sharedPreferences.getString(SP_KEY_CMD_HISTORY, ""),
+                    object : TypeToken<List<String>>() {}.type
+                ) ?: emptyList()
+            }.getOrDefault(emptyList()).takeIf { it.isEmpty() }?.let {
+                cmdHistoryQueue.clear()
+                cmdHistoryData.postValue(it)
+            }
+        }
+    }
+
+    fun onStop() {
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedPreferences.edit {
+                putString(SP_KEY_CMD_HISTORY, Gson().toJson(cmdHistoryData.value))
+            }
+        }
     }
 }

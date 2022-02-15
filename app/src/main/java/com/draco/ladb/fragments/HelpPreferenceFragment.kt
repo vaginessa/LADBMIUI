@@ -5,13 +5,17 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.*
 import com.draco.ladb.R
 import com.draco.ladb.utils.ADB
+import com.draco.ladb.viewmodels.MainActivityViewModel
 import com.draco.ladb.views.MainActivity
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
 class HelpPreferenceFragment : PreferenceFragmentCompat() {
@@ -52,6 +56,16 @@ class HelpPreferenceFragment : PreferenceFragmentCompat() {
             getString(R.string.licenses_key) -> {
                 val intent = Intent(requireContext(), OssLicensesMenuActivity::class.java)
                 startActivity(intent)
+            }
+
+            getString(R.string.clear_history_key) -> {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    context?.applicationContext?.let {
+                        PreferenceManager.getDefaultSharedPreferences(it).edit {
+                            putString(MainActivityViewModel.SP_KEY_CMD_HISTORY, "")
+                        }
+                    }
+                }
             }
 
             else -> {
